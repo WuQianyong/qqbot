@@ -332,7 +332,8 @@ QQBot.__init__ = None
 
 if __name__ == '__main__':
     from qqbot import _bot as bot
-    bot.Login()
-    gl = bot.List('group')
-    ml = bot.List(gl[0])
-    m = ml[0]
+    bot.Login(['-q','2850450055'])
+    gl = bot.List('buddy')
+    print(gl)
+    # ml = bot.List(gl[0])
+    # m = ml[0]

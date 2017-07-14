@@ -5,6 +5,7 @@
 
 from qqbot.utf8logger import DEBUG
 
+
 def onInit(bot):
     # 初始化时被调用
     # 注意 : 此时 bot 尚未启动，因此请勿在本函数中调用 bot.List/SendTo/GroupXXX/Stop/Restart 等接口
@@ -51,6 +52,7 @@ def onPlug(bot):
     # 提醒：如果本插件设置为启动时自动加载，则本函数将延迟到登录完成后被调用
     # bot ： QQBot 对象
     DEBUG('%s.onPlug', __name__)
+
 
 def onUnplug(bot):
     # 本插件被卸载时被调用

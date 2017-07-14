@@ -9,6 +9,7 @@ CTYPES = {
     'group-member': '成员', 'discuss-member': '成员'
 }
 
+
 class QContact(object):
     def __init__(self, *fields):
         for k, field in zip(self.fields, fields):
@@ -21,14 +22,19 @@ class QContact(object):
     def __setattr__(self, k, v):
         raise TypeError("QContact object is readonly")
 
+
 class Buddy(QContact):
+    # 4=============================================
     columns = '''\
         qq VARCHAR(12),
         uin VARCHAR(12) PRIMARY KEY,
         nick VARCHAR(80),
         mark VARCHAR(80),
-        name VARCHAR(80)
+        name VARCHAR(80),
+        gname VARCHAR(80)
     '''
+    # =============================================
+
 
 class Group(QContact):
     columns = '''\
@@ -40,11 +46,13 @@ class Group(QContact):
         gcode VARCHAR(12)
     '''
 
+
 class Discuss(QContact):
     columns = '''\
         uin VARCHAR(12) PRIMARY KEY,
         name VARCHAR(80)
     '''
+
 
 class GroupMember(QContact):
     columns = '''\
@@ -64,12 +72,14 @@ class GroupMember(QContact):
         point INTEGER
     '''
 
+
 class DiscussMember(QContact):
     columns = '''\
         qq VARCHAR(12),
         uin VARCHAR(12) PRIMARY KEY,
         name VARCHAR(80)
     '''
+
 
 contactMaker = {}
 
@@ -80,18 +90,21 @@ for cls in [Buddy, Group, Discuss, GroupMember, DiscussMember]:
                   for row in cls.columns.strip().split('\n')]
     contactMaker[cls.ctype] = cls
 
+
 def tName(tinfo):
     if tinfo in ('buddy', 'group', 'discuss'):
         return tinfo
     else:
         assert tinfo.uin.isdigit()
-        return tinfo.ctype+'_member_'+tinfo.uin
+        return tinfo.ctype + '_member_' + tinfo.uin
+
 
 def rName(tinfo):
     if tinfo in ('buddy', 'group', 'discuss'):
-        return CTYPES[tinfo]+'列表'
+        return CTYPES[tinfo] + '列表'
     else:
-        return str(tinfo)+'的成员列表'
+        return str(tinfo) + '的成员列表'
+
 
 def tType(tinfo):
     if tinfo in ('buddy', 'group', 'discuss'):
@@ -99,27 +112,29 @@ def tType(tinfo):
     else:
         return tinfo.ctype + '-member'
 
+
 def tMaker(tinfo):
     return contactMaker[tType(tinfo)]
+
 
 class ContactDB(object):
     def __init__(self, dbname=':memory:'):
         self.conn = sqlite3.connect(dbname)
         self.conn.text_factory = str
         self.cursor = self.conn.cursor()
-    
+
     def Update(self, tinfo, contacts):
         tname, tmaker = tName(tinfo), tMaker(tinfo)
-        
+        # print(tmaker)
         try:
             if self.exist(tname):
                 self.cursor.execute("DELETE FROM '%s'" % tname)
             else:
                 sql = ("CREATE TABLE '%s' (" % tname) + tmaker.columns + ')'
                 self.cursor.execute(sql)
-            
+
             if contacts:
-                w = ','.join(['?']*len(tmaker.fields))
+                w = ','.join(['?'] * len(tmaker.fields))
                 sql = "INSERT INTO '%s' VALUES(%s)" % (tname, w)
                 self.cursor.executemany(sql, contacts)
         except:
@@ -129,13 +144,13 @@ class ContactDB(object):
         else:
             self.conn.commit()
             return rName(tinfo)
-    
+
     def List(self, tinfo, cinfo=None):
         tname, tmaker = tName(tinfo), tMaker(tinfo)
 
         if not self.exist(tname):
             return None
-            
+
         if cinfo is None:
             items = self.selectAll(tname)
         elif cinfo == '':
@@ -150,9 +165,9 @@ class ContactDB(object):
                         column = tag[:-1]
                         cinfo = cinfo[len(tag):]
                         break
-                    if cinfo.startswith(tag[:-1]+':like:'):
+                    if cinfo.startswith(tag[:-1] + ':like:'):
                         column = tag[:-1]
-                        cinfo = cinfo[(len(tag)+5):]
+                        cinfo = cinfo[(len(tag) + 5):]
                         if not cinfo:
                             return []
                         like = True
@@ -169,14 +184,14 @@ class ContactDB(object):
                         like = True
                     else:
                         column = 'name'
-                
+
             if column not in tmaker.fields:
                 return []
 
             items = self.select(tname, column, cinfo, like)
-        
+
         return [tmaker(*item) for item in items]
-    
+
     def exist(self, tname):
         self.cursor.execute(
             ("SELECT tbl_name FROM sqlite_master "
@@ -196,7 +211,7 @@ class ContactDB(object):
     def selectAll(self, tname):
         self.cursor.execute("SELECT * FROM '%s'" % tname)
         return self.cursor.fetchall()
-    
+
     def Delete(self, tinfo, c):
         tname = tName(tinfo)
         try:
@@ -208,7 +223,7 @@ class ContactDB(object):
         else:
             self.conn.commit()
             return True
-    
+
     def Modify(self, tinfo, c, **kw):
         tname, tmaker = tName(tinfo), tMaker(tinfo)
         colstr, values = [], []
@@ -249,6 +264,7 @@ class ContactDB(object):
             fields.append(val)
         return tmaker(*fields)
 
+
 if __name__ == '__main__':
     db = ContactDB()
     db.Update('buddy', [
@@ -257,7 +273,7 @@ if __name__ == '__main__':
     ])
     bl = db.List('buddy')
     print((bl, bl[0].__dict__))
-    
+
     print(db.List('buddy', 'nick=nick昵称2'))
     print(db.List('buddy', 'name名称1'))
 
@@ -265,17 +281,17 @@ if __name__ == '__main__':
         ['123456', 'uin849384', '昵称1', '备注1', '名称1', 'gcode1'],
         ['456789', 'uin823484', '昵称2', '备注2', '名称2', 'gcode2']
     ])
-    
+
     print(db.List('group', '12345'))
     g = db.List('group', '123456')[0]
-    
+
     db.Update(g, [
         ['123456', 'uin849384', '昵称1', '备注1', '名片1', '名称1', 123456, 78944, '成员',
          2, 0, 100, 'tucao', 100],
         ['123456', 'uin845684', '昵称2', '备注2', '名片2', '名称2', 123456, 78944, '成员',
-         2, 0, 100, 'tucao', 100]  
+         2, 0, 100, 'tucao', 100]
     ])
-    
+
     print(db.List(g, 'name:like:名称'))
     print(db.List(g, '123456'))
     print(db.List(g, '名称2'))
